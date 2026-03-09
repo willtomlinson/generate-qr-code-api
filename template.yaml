@@ -12,7 +12,7 @@ Resources:
     Properties:
       CodeUri: generate_qr_code/
       Handler: app.lambda_handler
-      Runtime: python3.14
+      Runtime: python3.13
       Architectures:
         - x86_64
       Events:
