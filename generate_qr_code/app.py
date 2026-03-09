@@ -51,18 +51,24 @@ def generate_qr_code_image(data: str) -> bytes:
         logger.error(f"Failed to generate QR code: {e}")
         raise RuntimeError(f"Failed to generate QR code: {e}") from e
 
+def generate_presigned_url(bucket: str, key: str, expires_in: int = URL_EXPIRE) -> str:
+    try:
+        return s3_client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=expires_in,
+            HttpMethod='GET'
+        )
+    except ClientError as e:
+        logger.error(f"Failed to generate presigned URL: {e}")
+        raise RuntimeError(f"Failed to generate presigned URL: {e}") from e
+
 def lambda_handler(event, context):
     try:
-        # API Gateway can deliver the body as a string or already parsed dict
-        # if isinstance(event.get("body"), str):
-        #     payload = json.loads(event["body"])
-        # else:
-        #     payload = event.get("body", {})
-
-        # text = payload.get("text")
-        text='abc123'
+        query_params = event.get('queryStringParameters', {})
+        text = query_params.get('text')
         if not text:
-            raise ValueError("Missing 'text' field in request payload")
+            raise ValueError("Missing 'text' query string parameter")
 
         qr_code_image = generate_qr_code_image(text)
 
@@ -70,12 +76,7 @@ def lambda_handler(event, context):
 
         write_to_s3(S3_BUCKET, key, qr_code_image)
 
-        presigned_url = s3_client.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={'Bucket': S3_BUCKET, 'Key': key},
-            ExpiresIn=URL_EXPIRE,
-            HttpMethod='GET'
-        )
+        presigned_url = generate_presigned_url(S3_BUCKET, key)
 
         return {
             "statusCode": 200,
