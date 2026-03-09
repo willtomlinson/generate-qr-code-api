@@ -17,17 +17,6 @@ logger.setLevel(getattr(logging, LOGGER_LEVEL))
 
 s3_client = boto3.client('s3')
 
-def write_to_s3(bucket: str, key: str, data: bytes) -> str:
-    """
-    Uploads the given data to S3 and returns the public URL.
-    """
-    try:
-        s3_client.put_object(Bucket=bucket, Key=key, Body=data, ContentType='image/png')
-        return f"https://{bucket}.s3.amazonaws.com/{key}"
-    except ClientError as e:
-        logger.error(f"Failed to upload to S3: {e}")
-        raise RuntimeError(f"Failed to upload data to S3: {e}") from e
-
 def generate_qr_code_image(data: str) -> bytes:
     """
     Create a PNG QR‑code for the supplied text. Returns raw PNG bytes.
@@ -50,6 +39,17 @@ def generate_qr_code_image(data: str) -> bytes:
     except Exception as e:
         logger.error(f"Failed to generate QR code: {e}")
         raise RuntimeError(f"Failed to generate QR code: {e}") from e
+
+def write_to_s3(bucket: str, key: str, data: bytes) -> str:
+    """
+    Uploads the given data to S3 and returns the public URL.
+    """
+    try:
+        s3_client.put_object(Bucket=bucket, Key=key, Body=data, ContentType='image/png')
+        return f"https://{bucket}.s3.amazonaws.com/{key}"
+    except ClientError as e:
+        logger.error(f"Failed to upload to S3: {e}")
+        raise RuntimeError(f"Failed to upload data to S3: {e}") from e
 
 def generate_presigned_url(bucket: str, key: str, expires_in: int = URL_EXPIRE) -> str:
     try:
@@ -80,13 +80,13 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
+            "headers": {"Content-Type": "application/json"},
             "body": json.dumps({
                 "message": "Image uploaded successfully",
                 "bucket": S3_BUCKET,
                 "key": key,
                 "url": presigned_url 
             }),
-            "headers": {"Content-Type": "application/json"}
         }
     
     except Exception as e:
