@@ -66,7 +66,7 @@ def generate_presigned_url(bucket: str, key: str, expires_in: int = URL_EXPIRE) 
 def lambda_handler(event, context):
     try:
         query_params = event.get('queryStringParameters', {})
-        text = query_params.get('text')
+        text = query_params.get('text', '')
         if not text:
             raise ValueError("Missing 'text' query string parameter")
 
