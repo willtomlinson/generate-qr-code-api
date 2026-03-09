@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: QR Code Generator
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  GenerateQrCodeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: generate_qr_code/
+      Handler: app.lambda_handler
+      Runtime: python3.14
+      Architectures:
+        - x86_64
+      Events:
+        GenerateQrCode:
+          Type: Api
+          Properties:
+            Path: /generate-qr-code
+            Method: get
+      Environment:
+        Variables:
+          S3_BUCKET: generate-qr-code-api
+          REGION: eu-west-2
+          URL_EXPIRE: 86400
+          LOGGER_LEVEL: INFO
+      Policies:
+        - S3CrudPolicy:
+            BucketName: generate-qr-code-api
+
+Outputs:
+  GenerateQrCodeApi:
+    Description: "API Gateway endpoint URL for Generate Qr Code function (Prod stage)"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/generate-qr-code"
+  GenerateQrCodeFunction:
+    Description: "Generate Qr Code lambda function ARN"
+    Value: !GetAtt GenerateQrCodeFunction.Arn
